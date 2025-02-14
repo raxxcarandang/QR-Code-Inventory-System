@@ -1,0 +1,609 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Data.SqlClient;
+using System.Data.Sql;
+using System.Data.SqlTypes;
+using System.Timers;
+using System.Diagnostics;
+using System.Drawing.Imaging;
+using QRCoder;
+
+namespace OOProject
+{
+    public partial class fromSub1 : Form
+    {
+        public fromSub1()
+        {
+            InitializeComponent();
+        }
+   
+        private void fromSub1_Load(object sender, EventArgs e)
+        {
+            // TODO: This line of code loads data into the '_UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable' table. You can move, or remove it, as needed.
+            this.utilityTableTableAdapter1.Fill(this._UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable);
+            this.ControlBox = false;
+            
+
+            //Default Item in comboBox1:
+            comboBox1.SelectedIndex = 0;
+            comboBox2.SelectedIndex = 0;
+            
+          
+            //ID Count from DataGridView:
+            string ID = "";
+            int rowcount = dataGridView1.Rows.Count + 1;
+            if (rowcount < 10)
+            {
+                ID = "UTIL-000000" + rowcount;
+            }
+            else if (rowcount >= 10 && rowcount < 100)
+            {
+                ID = "UTIL-00000" + rowcount;
+            }
+            else if (rowcount >= 100 && rowcount < 1000)
+            {
+                ID = "UTIL-0000" + rowcount;
+            }
+            else if (rowcount >= 1000 && rowcount < 10000)
+            {
+                ID = "UTIL-000" + rowcount;
+            }
+            else if (rowcount >= 10000 && rowcount < 100000)
+            {
+                ID = "UTIL-00" + rowcount;
+            }
+
+            else if (rowcount >= 100000 && rowcount < 1000000)
+            {
+                ID = "UTIL-0" + rowcount;
+            }
+            else if (rowcount >= 1000000)
+            {
+                ID = "UTIL-" + rowcount;
+            }
+            else
+            {
+                ID = "";
+            }
+            textBox2.Text = ID;
+
+        }
+
+        //Global Variables:
+        SqlConnection con;
+        int button7click = 0;
+        DateTime today = DateTime.Today;
+
+        // Main Utility Object:
+        public class Utility
+        {
+            public string ID;
+            public string name;
+            public string type;
+            public string specs;
+            public string placement;
+            public string location;
+            public string status;
+            public string qr;
+
+            // Utility Object Initialization:
+            /*
+            public string ID;
+            public string utilname;
+            public string utilype;
+            public string place;
+            public string loc;
+            public string sts;
+            */
+            //Borrower Object Initialization:
+            class Borrower
+            {
+
+            }
+
+
+        }
+        /*
+                 #####  #######    #    ######   #####  #     #    #     # ####### ####### #     # ####### ######  
+                #     # #         # #   #     # #     # #     #    ##   ## #          #    #     # #     # #     # 
+                #       #        #   #  #     # #       #     #    # # # # #          #    #     # #     # #     # 
+                 #####  #####   #     # ######  #       #######    #  #  # #####      #    ####### #     # #     # 
+                      # #       ####### #   #   #       #     #    #     # #          #    #     # #     # #     # 
+                #     # #       #     # #    #  #     # #     #    #     # #          #    #     # #     # #     # 
+                 #####  ####### #     # #     #  #####  #     #    #     # #######    #    #     # ####### ######  
+         */
+        // Sql Search Method:
+        public void search()
+        {
+            string constring = "Data Source = PCLIGHT\\SQLEXPRESS; Initial Catalog = UTILITY-INVENTORY-DATABASE; Trusted_Connection = True";
+            string search = "SELECT * FROM UtilityTable WHERE @condition LIKE \" @query";
+            con = new SqlConnection(constring);
+            int num = 0;
+
+            //ID Count from DataGridView:
+            int rowcount = dataGridView1.Rows.Count + 1;
+            string ID = "UTILITY#" + rowcount;
+
+            // Try-Catch of Sql Search:
+            try
+            {
+                using (SqlCommand srch = new SqlCommand(search, con))
+                {
+                    con.Open();
+                    srch.Parameters.Add("@condtion", SqlDbType.VarChar).Value = comboBox1.Text;
+                    srch.Parameters.Add("@query", SqlDbType.VarChar).Value = textBox1.Text;
+                    srch.ExecuteNonQuery();
+                    this.utilityTableTableAdapter1.Fill(this._UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable);
+                    dataGridView1.Refresh();
+                    con.Close();
+                }
+            }
+            catch (Exception inserr)
+            {
+                MessageBox.Show("CONNECTION ERROR!");
+            }
+
+        }
+
+        /*
+                 ### #     #  #####  ####### ######  #######    #     # ####### ####### #     # ####### ######  
+                 #  ##    # #     # #       #     #    #       ##   ## #          #    #     # #     # #     # 
+                 #  # #   # #       #       #     #    #       # # # # #          #    #     # #     # #     # 
+                 #  #  #  #  #####  #####   ######     #       #  #  # #####      #    ####### #     # #     # 
+                 #  #   # #       # #       #   #      #       #     # #          #    #     # #     # #     # 
+                 #  #    ## #     # #       #    #     #       #     # #          #    #     # #     # #     # 
+                ### #     #  #####  ####### #     #    #       #     # #######    #    #     # ####### ######  
+         */
+        // Sql Insertion Method:
+
+        public void insert()
+        {
+            //Initialization of Connections and Sql Strings:
+            string constring = "Data Source = PCLIGHT\\SQLEXPRESS; Initial Catalog = UTILITY-INVENTORY-DATABASE; Trusted_Connection = True";
+            string create = "Insert Into UtilityTable values (@id, @name, @type, @specs, @placement, @location, @status)";
+            string count = "Select * From UtilityTable";
+            con = new SqlConnection(constring);
+            int num = 0;
+            
+
+            //ID Count from DataGridView:
+            int rowcount = dataGridView1.Rows.Count + 1;
+            string ID = "";
+            if (rowcount < 10)
+            {
+                ID = "UTIL-000000" + rowcount;
+            }
+            else if (rowcount >= 10 && rowcount < 100)
+            {
+                ID = "UTIL-00000" + rowcount;
+            }
+            else if (rowcount >= 100 && rowcount < 1000)
+            {
+                ID = "UTIL-0000" + rowcount;
+            }
+            else if (rowcount >= 1000 && rowcount < 10000)
+            {
+                ID = "UTIL-000" + rowcount;
+            }
+            else if (rowcount >= 10000 && rowcount < 100000)
+            {
+                ID = "UTIL-00" + rowcount;
+            }
+
+            else if (rowcount >= 100000 && rowcount < 1000000)
+            {
+                ID = "UTIL-0" + rowcount;
+            }
+            else if (rowcount >= 1000000)
+            {
+                ID = "UTIL-" + rowcount;
+            }
+            else
+            {
+                ID = "";
+            }
+
+            //Initialization of Object in Insert Context:
+            Utility utility = new Utility();
+            utility.ID = textBox2.Text;
+            utility.name = textBox3.Text;
+            utility.type = comboBox2.Text;
+            utility.specs = textBox5.Text;
+            utility.placement = textBox6.Text;
+            utility.location = textBox7.Text;
+            utility.status = textBox8.Text;
+
+            // Initialization of Qr Coder:
+            using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
+            using (QRCodeData qrCodeData = qrGenerator.CreateQrCode("Utility ID: " + utility.ID + "\n" + "Name: " + utility.name + "\n" + "Type: " + utility.type + "\n" + "Specification: " + utility.specs + "\n" + "Placement: " + utility.placement + "\n" + "Location: " + utility.location + "\n" + "Status: " + utility.status + "\n" + "Date of Creation: " + today, QRCodeGenerator.ECCLevel.Q))
+            using (QRCode qrCode = new QRCode(qrCodeData))
+            {
+                Bitmap qrCodeImage = qrCode.GetGraphic(20);
+                pictureBox1.Image = qrCodeImage;
+          
+            }
+
+
+            // Try-Catch of Sql Insertion:
+            try
+            {
+                using (SqlCommand ins = new SqlCommand(create, con))
+                {
+
+                    con.Open();
+                    ins.Parameters.Add("@id", SqlDbType.VarChar).Value = ID;
+                    ins.Parameters.Add("@name", SqlDbType.VarChar).Value = utility.name;
+                    ins.Parameters.Add("@type", SqlDbType.VarChar).Value = utility.type;
+                    ins.Parameters.Add("@specs", SqlDbType.VarChar).Value = utility.specs;
+                    ins.Parameters.Add("@placement", SqlDbType.VarChar).Value = utility.placement;
+                    ins.Parameters.Add("@location", SqlDbType.VarChar).Value = utility.location;
+                    ins.Parameters.Add("@status", SqlDbType.VarChar).Value = utility.status;
+                    ins.ExecuteNonQuery();
+                    this.utilityTableTableAdapter1.Fill(this._UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable);
+                    dataGridView1.Refresh();
+                    con.Close();
+                }
+            }
+            catch (Exception conerr)
+            {
+                MessageBox.Show("Connection Error!");
+            }
+        }
+        /*
+                     #     # ######  ######     #    ####### #######    #     # ####### ####### #     # ####### ######  
+                    #     # #     # #     #   # #      #    #          ##   ## #          #    #     # #     # #     # 
+                    #     # #     # #     #  #   #     #    #          # # # # #          #    #     # #     # #     # 
+                    #     # ######  #     # #     #    #    #####      #  #  # #####      #    ####### #     # #     # 
+                    #     # #       #     # #######    #    #          #     # #          #    #     # #     # #     # 
+                    #     # #       #     # #     #    #    #          #     # #          #    #     # #     # #     # 
+                     #####  #       ######  #     #    #    #######    #     # #######    #    #     # ####### ######  
+         */
+        // Sql Updation Method:
+        public void update()
+        {
+            //Initialization of Connections and Sql Strings:
+            string constring = "Data Source = PCLIGHT\\SQLEXPRESS; Initial Catalog = UTILITY-INVENTORY-DATABASE; Trusted_Connection = True";
+            string update = "Update UtilityTable SET Name = @name, Type = @type, Specification = @specs, Placement = @placement, Location = @location, Status = @status WHERE ID = @id";
+            string count = "Select * From UtilityTable";
+            con = new SqlConnection(constring);
+            int num = 0;
+
+            //ID Count from DataGridView:
+            int rowcount = dataGridView1.Rows.Count + 1;
+            string ID = "UTILITY#" + rowcount;
+
+            if (rowcount < 10)
+            {
+                ID = "UTIL-000000" + rowcount;
+            }
+            else if (rowcount >= 10 && rowcount < 100)
+            {
+                ID = "UTIL-00000" + rowcount;
+            }
+            else if (rowcount >= 100 && rowcount < 1000)
+            {
+                ID = "UTIL-0000" + rowcount;
+            }
+            else if (rowcount >= 1000 && rowcount < 10000)
+            {
+                ID = "UTIL-000" + rowcount;
+            }
+            else if (rowcount >= 10000 && rowcount < 100000)
+            {
+                ID = "UTIL-00" + rowcount;
+            }
+
+            else if (rowcount >= 100000 && rowcount < 1000000)
+            {
+                ID = "UTIL-0" + rowcount;
+            }
+            else if (rowcount >= 1000000)
+            {
+                ID = "UTIL-" + rowcount;
+            }
+            else
+            {
+                ID = "";
+            }
+            textBox2.Text = ID;
+
+            //Initialization of Object in Update Context:
+            Utility utility = new Utility();
+            utility.ID = textBox2.Text;
+            utility.name = textBox3.Text;
+            utility.type = comboBox2.Text;
+            utility.specs = textBox5.Text;
+            utility.placement = textBox6.Text;
+            utility.location = textBox7.Text;
+            utility.status = textBox8.Text;
+
+            // Try-Catch of Sql Update:
+            try
+            {
+                using (SqlCommand upd = new SqlCommand(update, con))
+                {
+                    con.Open();
+                    upd.Parameters.Add("@id", SqlDbType.VarChar).Value = utility.ID;
+                    upd.Parameters.Add("@name", SqlDbType.VarChar).Value = utility.name;
+                    upd.Parameters.Add("@type", SqlDbType.VarChar).Value = utility.type;
+                    upd.Parameters.Add("@specs", SqlDbType.VarChar).Value = utility.specs;
+                    upd.Parameters.Add("@placement", SqlDbType.VarChar).Value = utility.placement;
+                    upd.Parameters.Add("@location", SqlDbType.VarChar).Value = utility.location;
+                    upd.Parameters.Add("@status", SqlDbType.VarChar).Value = utility.status;
+                    upd.ExecuteNonQuery();
+                    this.utilityTableTableAdapter1.Fill(this._UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable);
+                    dataGridView1.Refresh();
+                    con.Close();
+                }
+            }
+            catch (Exception conerr)
+            {
+                MessageBox.Show("Connection Error!");
+            }
+        }
+        /*
+                     ######  ####### #       ####### ####### #######    #     # ####### ####### #     # ####### ######  
+                    #     # #       #       #          #    #          ##   ## #          #    #     # #     # #     # 
+                    #     # #       #       #          #    #          # # # # #          #    #     # #     # #     # 
+                    #     # #####   #       #####      #    #####      #  #  # #####      #    ####### #     # #     # 
+                    #     # #       #       #          #    #          #     # #          #    #     # #     # #     # 
+                    #     # #       #       #          #    #          #     # #          #    #     # #     # #     # 
+                    ######  ####### ####### #######    #    #######    #     # #######    #    #     # ####### ######  
+         */
+        // Sql Deletion Method:
+        public void delete()
+        {
+            //Initialization of Connections and Sql Strings:
+            string constring = "Data Source = PCLIGHT\\SQLEXPRESS; Initial Catalog = UTILITY-INVENTORY-DATABASE; Trusted_Connection = True";
+            string delete = "Delete FROM UtilityTable WHERE ID = @id ";
+            string count = "Select * From UtilityTable";
+            con = new SqlConnection(constring);
+            int num = 0;
+
+            //ID Count from DataGridView:
+            int rowcount = dataGridView1.Rows.Count + 1;
+            string ID = "UTILITY#" + rowcount;
+
+            // Try-Catch of Sql Deletion:
+            try
+            {
+                using (SqlCommand del = new SqlCommand(delete, con))
+                {
+                    con.Open();
+                    del.Parameters.Add("@id", SqlDbType.VarChar).Value = dataGridView1.SelectedRows[0].Cells[0].Value + string.Empty;
+                    del.ExecuteNonQuery();
+                    this.utilityTableTableAdapter1.Fill(this._UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable);
+                    dataGridView1.Refresh();
+                    con.Close();
+                }
+            }
+            catch (Exception conerr)
+            {
+                MessageBox.Show("Connection Error!");
+            }
+        }
+
+        /*
+                     ######  #######  #####  ####### #######    #     # ####### ####### #     # ####### ######  
+                    #     # #       #     # #          #       ##   ## #          #    #     # #     # #     # 
+                    #     # #       #       #          #       # # # # #          #    #     # #     # #     # 
+                    ######  #####    #####  #####      #       #  #  # #####      #    ####### #     # #     # 
+                    #   #   #             # #          #       #     # #          #    #     # #     # #     # 
+                    #    #  #       #     # #          #       #     # #          #    #     # #     # #     # 
+                    #     # #######  #####  #######    #       #     # #######    #    #     # ####### ######  
+         */
+        //Reset Method:
+        public void clearbox()
+        {
+            //ID Count from DataGridView to reset for latest ID:
+            int rowcount = dataGridView1.Rows.Count + 1;
+            string ID = "";
+            if (rowcount < 10)
+            {
+                ID = "UTIL-000000" + rowcount;
+            }
+            else if (rowcount >= 10 && rowcount < 100)
+            {
+                ID = "UTIL-00000" + rowcount;
+            }
+            else if (rowcount >= 100 && rowcount < 1000)
+            {
+                ID = "UTIL-0000" + rowcount;
+            }
+            else if (rowcount >= 1000 && rowcount < 10000)
+            {
+                ID = "UTIL-000" + rowcount;
+            }
+            else if (rowcount >= 10000 && rowcount < 100000)
+            {
+                ID = "UTIL-00" + rowcount;
+            }
+
+            else if (rowcount >= 100000 && rowcount < 1000000)
+            {
+                ID = "UTIL-0" + rowcount;
+            }
+            else if (rowcount >= 1000000)
+            {
+                ID = "UTIL-" + rowcount;
+            }
+            else
+            {
+                ID = "";
+            }
+
+
+            // Clear all Textboxes and Etc.:
+            textBox1.Text = "";
+            textBox2.Text = ID;
+            textBox3.Text = "";
+            comboBox2.SelectedIndex = 0;
+            textBox5.Text = "";
+            textBox6.Text = "";
+            textBox7.Text = "";
+            textBox8.Text = "";
+            pictureBox1.Image = null;
+            this.utilityTableTableAdapter1.Fill(this._UTILITY_INVENTORY_DATABASEDataSet3.UtilityTable);
+            dataGridView1.Refresh();
+        }
+
+        //Save QR method:
+        public void saveqr()
+        {
+
+        }
+
+        //Categorize Method for button7:
+       public void categorize()
+        {
+             if (button7click == 0)
+            {
+                button7click += 1;
+                button7.Text = "ELECTRIC";
+            } 
+            else if (button7click == 1)
+            {
+                button7click += 1;
+                button7.Text = "WATER";
+            }
+            else if (button7click == 2)
+            {
+                button7click += 1;
+                button7.Text = "GAS";
+            }
+            else if (button7click == 3)
+            {
+                button7click += 1;
+                button7.Text = "OTHER";
+            }
+            else 
+            {
+                button7click = 0;
+                button7.Text = "ALL";
+            }
+        }
+        /*
+        #####  ####### #       #######  #####  #######    #     # ####### ####### #     # ####### ######  
+        #     # #       #       #       #     #    #       ##   ## #          #    #     # #     # #     # 
+        #       #       #       #       #          #       # # # # #          #    #     # #     # #     # 
+         #####  #####   #       #####   #          #       #  #  # #####      #    ####### #     # #     # 
+              # #       #       #       #          #       #     # #          #    #     # #     # #     # 
+        #     # #       #       #       #     #    #       #     # #          #    #     # #     # #     # 
+         #####  ####### ####### #######  #####     #       #     # #######    #    #     # ####### ######    
+       */
+        //Select Method:
+        public void select()
+        {
+            Utility utility = new Utility();
+            utility.ID = dataGridView1.SelectedRows[0].Cells[0].Value + string.Empty;
+            utility.name = dataGridView1.SelectedRows[0].Cells[1].Value + string.Empty;
+            utility.type = dataGridView1.SelectedRows[0].Cells[2].Value + string.Empty;
+            utility.specs = dataGridView1.SelectedRows[0].Cells[3].Value + string.Empty;
+            utility.placement = dataGridView1.SelectedRows[0].Cells[4].Value + string.Empty;
+            utility.location = dataGridView1.SelectedRows[0].Cells[5].Value + string.Empty;
+            utility.status = dataGridView1.SelectedRows[0].Cells[6].Value + string.Empty;
+
+            if (dataGridView1.SelectedRows.Count > 0)
+            {
+                textBox2.Text = utility.ID;
+                textBox3.Text = utility.name;
+                if (utility.type.Equals("Electric"))
+                {
+                    comboBox2.SelectedIndex = 0;
+                }
+                else if (utility.type.Equals("Water"))
+                {
+                    comboBox2.SelectedIndex = 1;
+                }
+                else if (utility.type.Equals("Gas"))
+                {
+                    comboBox2.SelectedIndex = 2;
+                }
+                else if (utility.type.Equals("Other"))
+                {
+                    comboBox2.SelectedIndex = 3;
+                }
+                textBox5.Text = utility.specs;
+                textBox6.Text = utility.placement;
+                textBox7.Text = utility.location;
+                textBox8.Text = utility.status;
+
+                using (QRCodeGenerator qrGenerator = new QRCodeGenerator())
+                using (QRCodeData qrCodeData = qrGenerator.CreateQrCode("Utility ID: " + utility.ID + "\n" + "Name: " + utility.name + "\n" + "Type: " + utility.type + "\n" + "Specification: " + utility.specs + "\n" + "Placement: " + utility.placement + "\n" + "Location: " + utility.location + "\n" + "Status: " + utility.status + "\n" + "Date of Creation: " + today, QRCodeGenerator.ECCLevel.Q))
+                using (QRCode qrCode = new QRCode(qrCodeData))
+                {
+                    Bitmap qrCodeImage = qrCode.GetGraphic(20);
+                    pictureBox1.Image = qrCodeImage;
+
+                }
+            }
+        }
+       
+
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void checkBox2_CheckedChanged(object sender, EventArgs e)
+        {
+          
+        }
+
+        private void checkBox1_CheckedChanged_1(object sender, EventArgs e)
+        {
+       
+        }
+
+        private void checkBox2_CheckedChanged_1(object sender, EventArgs e)
+        {
+            
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            insert();
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            update();
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            clearbox();
+        }
+
+        private void button5_Click(object sender, EventArgs e)
+        {
+            delete();
+        }
+
+        private void button6_Click(object sender, EventArgs e)
+        {
+            saveqr();
+        }
+     
+        private void button7_Click(object sender, EventArgs e)
+        {
+    categorize();
+        }
+
+        private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
+        {
+            int rowIndex = e.RowIndex;
+            DataGridViewRow row = dataGridView1.Rows[rowIndex];
+            select();
+            }
+        }
+ }
+
+
